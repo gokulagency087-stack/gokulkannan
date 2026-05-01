@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+\import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-
 const AdminDashboard = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loginData, setLoginData] = useState({ email: '', password: '' });
@@ -11,21 +10,18 @@ const AdminDashboard = () => {
   // Orders State
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
-
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(false);
   const [newProduct, setNewProduct] = useState({ name: '', label: '', price: '', mrp: '' });
   const [imageFile, setImageFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null); // holds the product being edited
-
   useEffect(() => {
     if (isAuthenticated) {
       if (activeTab === 'orders') fetchOrders();
       if (activeTab === 'products') fetchProducts();
     }
   }, [isAuthenticated, activeTab]);
-
   const handleLogin = (e) => {
     e.preventDefault();
     if (loginData.email === 'gokulagency087@gmail.com' && loginData.password === 'Gokul@67') {
@@ -35,7 +31,6 @@ const AdminDashboard = () => {
       setLoginError('Invalid email or password');
     }
   };
-
   // --- ORDERS ---
   const fetchOrders = async () => {
     setOrdersLoading(true);
@@ -46,12 +41,10 @@ const AdminDashboard = () => {
     if (!error) setOrders(data || []);
     setOrdersLoading(false);
   };
-
   const updateOrderStatus = async (id, newStatus) => {
     const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', id);
     if (!error) setOrders(orders.map(o => o.id === id ? { ...o, status: newStatus } : o));
   };
-
   // --- PRODUCTS ---
   const fetchProducts = async () => {
     setProductsLoading(true);
@@ -62,7 +55,6 @@ const AdminDashboard = () => {
     if (!error) setProducts(data || []);
     setProductsLoading(false);
   };
-
   const handleAddProduct = async (e) => {
     e.preventDefault();
     if (!imageFile) return alert('Please select an image file');
@@ -72,19 +64,15 @@ const AdminDashboard = () => {
       const fileExt = imageFile.name.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
-
       // 1. Upload to Storage
       const { error: uploadError } = await supabase.storage
         .from('product-images')
         .upload(filePath, imageFile);
-
       if (uploadError) throw uploadError;
-
       // 2. Get Public URL
       const { data: { publicUrl } } = supabase.storage
         .from('product-images')
         .getPublicUrl(filePath);
-
       // 3. Insert into Database
       const { error: dbError } = await supabase.from('products').insert([{
         name: newProduct.name,
@@ -93,16 +81,13 @@ const AdminDashboard = () => {
         mrp: newProduct.mrp ? parseFloat(newProduct.mrp) : null,
         image_url: publicUrl
       }]);
-
       if (dbError) throw dbError;
-
       // Reset form and refresh
       setNewProduct({ name: '', label: '', price: '', mrp: '' });
       setImageFile(null);
       e.target.reset();
       fetchProducts();
       alert('Product added successfully!');
-
     } catch (error) {
       console.error(error);
       alert('Error adding product. Check if product-images bucket exists and is public.');
@@ -110,13 +95,11 @@ const AdminDashboard = () => {
       setIsUploading(false);
     }
   };
-
   const deleteProduct = async (id) => {
     if(!window.confirm("Are you sure you want to delete this product?")) return;
     await supabase.from('products').delete().eq('id', id);
     fetchProducts();
   };
-
   const handleSaveEdit = async () => {
     if (!editingProduct) return;
     const { error } = await supabase.from('products').update({
@@ -132,7 +115,6 @@ const AdminDashboard = () => {
       alert('Failed to update product.');
     }
   };
-
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 font-sans">
@@ -148,7 +130,6 @@ const AdminDashboard = () => {
       </div>
     );
   }
-
   return (
     <div className="min-h-screen bg-gray-50 font-sans p-6">
       <div className="max-w-7xl mx-auto">
@@ -156,7 +137,6 @@ const AdminDashboard = () => {
           <h1 className="text-3xl font-bold text-agri-green">Gokulakannan Admin Panel</h1>
           <button onClick={() => setIsAuthenticated(false)} className="text-sm bg-red-100 text-red-600 px-4 py-2 rounded hover:bg-red-200">Logout</button>
         </header>
-
         {/* TABS */}
         <div className="flex space-x-4 mb-6">
           <button 
@@ -172,7 +152,6 @@ const AdminDashboard = () => {
             Manage Products
           </button>
         </div>
-
         {/* ORDERS TAB */}
         {activeTab === 'orders' && (
           <div>
@@ -205,7 +184,6 @@ const AdminDashboard = () => {
                       <p>{order.address_taluk} Tk</p>
                       <p>{order.address_district} Dt</p>
                     </div>
-
                     <div className="flex space-x-2 mt-4">
                       <button onClick={() => updateOrderStatus(order.id, 'pending')} disabled={order.status === 'pending'} className="flex-1 py-1 text-xs font-semibold rounded border border-yellow-500 text-yellow-600 disabled:opacity-50 hover:bg-yellow-50">Pending</button>
                       <button onClick={() => updateOrderStatus(order.id, 'delivered')} disabled={order.status === 'delivered'} className="flex-1 py-1 text-xs font-semibold rounded border border-green-500 text-green-600 disabled:opacity-50 hover:bg-green-50">Delivered</button>
@@ -217,7 +195,6 @@ const AdminDashboard = () => {
             )}
           </div>
         )}
-
         {/* PRODUCTS TAB */}
         {activeTab === 'products' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -253,7 +230,6 @@ const AdminDashboard = () => {
                 </button>
               </form>
             </div>
-
             {/* Product List */}
             <div className="lg:col-span-2">
               <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Current Products</h2>
@@ -307,5 +283,4 @@ const AdminDashboard = () => {
     </div>
   );
 };
-
 export default AdminDashboard;
