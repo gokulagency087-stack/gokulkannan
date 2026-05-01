@@ -12,12 +12,12 @@ const AdminDashboard = () => {
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
 
-  // Products State
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(false);
-  const [newProduct, setNewProduct] = useState({ name: '', label: '', price: '' });
+  const [newProduct, setNewProduct] = useState({ name: '', label: '', price: '', mrp: '' });
   const [imageFile, setImageFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null); // holds the product being edited
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -90,13 +90,14 @@ const AdminDashboard = () => {
         name: newProduct.name,
         label: newProduct.label,
         price: parseFloat(newProduct.price),
+        mrp: newProduct.mrp ? parseFloat(newProduct.mrp) : null,
         image_url: publicUrl
       }]);
 
       if (dbError) throw dbError;
 
       // Reset form and refresh
-      setNewProduct({ name: '', label: '', price: '' });
+      setNewProduct({ name: '', label: '', price: '', mrp: '' });
       setImageFile(null);
       e.target.reset();
       fetchProducts();
@@ -114,6 +115,22 @@ const AdminDashboard = () => {
     if(!window.confirm("Are you sure you want to delete this product?")) return;
     await supabase.from('products').delete().eq('id', id);
     fetchProducts();
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingProduct) return;
+    const { error } = await supabase.from('products').update({
+      name: editingProduct.name,
+      label: editingProduct.label,
+      price: parseFloat(editingProduct.price),
+      mrp: editingProduct.mrp ? parseFloat(editingProduct.mrp) : null,
+    }).eq('id', editingProduct.id);
+    if (!error) {
+      setEditingProduct(null);
+      fetchProducts();
+    } else {
+      alert('Failed to update product.');
+    }
   };
 
   if (!isAuthenticated) {
@@ -216,9 +233,15 @@ const AdminDashboard = () => {
                   <label className="block text-sm font-medium text-gray-700">Tamil Name (Label)</label>
                   <input required type="text" placeholder="e.g. அன்னபூர்ணா அரிசி" className="mt-1 w-full border px-3 py-2 rounded focus:ring-agri-green" value={newProduct.label} onChange={e => setNewProduct({...newProduct, label: e.target.value})} />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Price (₹)</label>
-                  <input required type="number" placeholder="e.g. 1500" className="mt-1 w-full border px-3 py-2 rounded focus:ring-agri-green" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">MRP (₹) <span className="text-gray-400 text-xs">(optional)</span></label>
+                    <input type="number" placeholder="e.g. 1800" className="mt-1 w-full border px-3 py-2 rounded focus:ring-agri-green" value={newProduct.mrp} onChange={e => setNewProduct({...newProduct, mrp: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Selling Price (₹)</label>
+                    <input required type="number" placeholder="e.g. 1500" className="mt-1 w-full border px-3 py-2 rounded focus:ring-agri-green" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Product Image (Any aspect ratio)</label>
@@ -237,16 +260,42 @@ const AdminDashboard = () => {
               {productsLoading ? <p>Loading...</p> : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {products.map(p => (
-                    <div key={p.id} className="bg-white rounded-lg shadow border flex p-3 gap-4 items-center">
-                      <img src={p.image_url} alt={p.name} className="w-20 h-20 aspect-square object-cover rounded shadow-sm bg-gray-100" />
-                      <div className="flex-1">
-                        <h4 className="font-bold text-sm">{p.name}</h4>
-                        <p className="text-xs text-gray-500">{p.label}</p>
-                        <p className="text-sm font-bold text-agri-gold mt-1">₹{p.price}</p>
-                      </div>
-                      <button onClick={() => deleteProduct(p.id)} className="text-red-500 hover:bg-red-50 p-2 rounded">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                      </button>
+                    <div key={p.id} className="bg-white rounded-lg shadow border p-3">
+                      {editingProduct && editingProduct.id === p.id ? (
+                        // --- EDIT MODE ---
+                        <div className="space-y-2">
+                          <img src={p.image_url} alt={p.name} className="w-full h-32 object-cover rounded bg-gray-100" />
+                          <input type="text" className="w-full border px-2 py-1 rounded text-sm" value={editingProduct.name} onChange={e => setEditingProduct({...editingProduct, name: e.target.value})} placeholder="English Name" />
+                          <input type="text" className="w-full border px-2 py-1 rounded text-sm" value={editingProduct.label} onChange={e => setEditingProduct({...editingProduct, label: e.target.value})} placeholder="Tamil Name" />
+                          <div className="grid grid-cols-2 gap-2">
+                            <input type="number" className="w-full border px-2 py-1 rounded text-sm" value={editingProduct.mrp || ''} onChange={e => setEditingProduct({...editingProduct, mrp: e.target.value})} placeholder="MRP ₹" />
+                            <input type="number" className="w-full border px-2 py-1 rounded text-sm" value={editingProduct.price} onChange={e => setEditingProduct({...editingProduct, price: e.target.value})} placeholder="Price ₹" />
+                          </div>
+                          <div className="flex gap-2">
+                            <button onClick={handleSaveEdit} className="flex-1 bg-agri-green text-white py-1.5 rounded text-sm font-bold hover:bg-green-800">Save</button>
+                            <button onClick={() => setEditingProduct(null)} className="flex-1 bg-gray-200 text-gray-700 py-1.5 rounded text-sm font-bold hover:bg-gray-300">Cancel</button>
+                          </div>
+                        </div>
+                      ) : (
+                        // --- VIEW MODE ---
+                        <div className="flex gap-3 items-center">
+                          <img src={p.image_url} alt={p.name} className="w-16 h-16 aspect-square object-cover rounded shadow-sm bg-gray-100 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-sm truncate">{p.name}</h4>
+                            <p className="text-xs text-gray-500 truncate">{p.label}</p>
+                            {p.mrp && p.mrp > p.price && <p className="text-xs text-gray-400">MRP: <span className="line-through">₹{p.mrp}</span></p>}
+                            <p className="text-sm font-bold text-agri-gold">₹{p.price}</p>
+                          </div>
+                          <div className="flex flex-col gap-1.5">
+                            <button onClick={() => setEditingProduct({...p})} className="text-blue-500 hover:bg-blue-50 p-1.5 rounded">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            </button>
+                            <button onClick={() => deleteProduct(p.id)} className="text-red-500 hover:bg-red-50 p-1.5 rounded">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
