@@ -2,17 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useCart } from '../context/CartContext';
-
 const Home = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const { cartCount, getQuantity, addToCart, removeFromCart } = useCart();
   const navigate = useNavigate();
-
   useEffect(() => {
     fetchProducts();
   }, []);
-
   const fetchProducts = async () => {
     const { data, error } = await supabase
       .from('products')
@@ -30,10 +27,8 @@ const Home = () => {
     }
     setLoading(false);
   };
-
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-800 pb-24">
-
       {/* ✅ FIXED HEADER - stays at top while scrolling */}
       <header className="fixed top-0 left-0 w-full bg-agri-green text-white z-40 shadow-md">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
@@ -64,10 +59,8 @@ const Home = () => {
           )}
         </div>
       </header>
-
       {/* Spacer to push content below fixed header */}
       <div className="h-[72px]"></div>
-
       {/* ✅ CONTACT INFO - scrolls with page, visible at top above products */}
       <div className="bg-green-800 text-white py-3 px-4">
         <div className="container mx-auto flex flex-col sm:flex-row items-center justify-center gap-2 text-center sm:text-left">
@@ -78,12 +71,9 @@ const Home = () => {
             9786801860
           </a>
           <span className="hidden sm:inline text-green-500">|</span>
-          <p className="text-xs opacity-80">5/96A, Erkolpatti, Dharmapuri - 636810
-            <span className="text-agri-gold ml-1">தருமபுரி</span>
-          </p>
+          <p className="text-xs opacity-80">5/96A, Erkolpatti, Dharmapuri - 636810</p>
         </div>
       </div>
-
       <main className="container mx-auto px-3 py-6">
         <h2 className="text-lg font-bold text-agri-green mb-4 border-b-2 border-agri-gold pb-1 inline-block">
           Our Products / எங்கள் தயாரிப்புகள்
@@ -108,7 +98,14 @@ const Home = () => {
                     <div>
                       <h3 className="text-sm font-bold text-gray-800 leading-tight">{product.name}</h3>
                       <p className="text-agri-green text-xs font-medium mt-0.5 mb-2">{product.label}</p>
-                      <p className="text-base font-bold text-agri-gold mb-3">₹{product.price}</p>
+                      <div className="mb-3">
+                        {product.mrp && product.mrp > product.price && (
+                          <p className="text-xs text-gray-400">
+                            MRP: <span className="line-through">₹{product.mrp}</span>
+                          </p>
+                        )}
+                        <p className="text-base font-bold text-agri-gold">₹{product.price}</p>
+                      </div>
                     </div>
                     
                     {/* ✅ ADD TO CART CONTROLS with RED minus button */}
@@ -135,7 +132,6 @@ const Home = () => {
           </div>
         )}
       </main>
-
       {/* ✅ FLOATING BUY BUTTON */}
       {cartCount > 0 && (
         <div className="fixed bottom-0 left-0 w-full bg-white border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] p-3 z-40">
@@ -159,5 +155,4 @@ const Home = () => {
     </div>
   );
 };
-
 export default Home;
